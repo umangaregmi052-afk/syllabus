@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Syllabus Tracker — ENCT/ENME/ENEX/ENSH</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f14;
+    --surface: #15161d;
+    --surface2: #1c1d27;
+    --border: #2a2b3a;
+    --text: #e8e9f0;
+    --muted: #6b6d82;
+    --accent-phy: #7eb8f7;
+    --accent-math: #a8d8a8;
+    --accent-prog: #f7c67e;
+    --accent-elec: #f79eb8;
+    --accent-draw: #c9b0f7;
+    --done: #4ade80;
+    --done-bg: #0d2818;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    font-size: 14px;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 240px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .sidebar-logo span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .nav-section {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 8px 20px 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--surface2); color: var(--text); }
+
+  .nav-item .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .nav-item.active-phy { border-left-color: var(--accent-phy); color: var(--accent-phy); }
+  .nav-item.active-math { border-left-color: var(--accent-math); color: var(--accent-math); }
+  .nav-item.active-prog { border-left-color: var(--accent-prog); color: var(--accent-prog); }
+  .nav-item.active-elec { border-left-color: var(--accent-elec); color: var(--accent-elec); }
+  .nav-item.active-draw { border-left-color: var(--accent-draw); color: var(--accent-draw); }
+
+  .mini-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 4px 20px 0;
+    overflow: hidden;
+  }
+  .mini-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+
+  /* MAIN */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    padding: 32px;
+    max-width: calc(100vw - 240px);
+  }
+
+  /* DASHBOARD */
+  .dashboard-header {
+    margin-bottom: 28px;
+  }
+  .dashboard-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    margin-bottom: 4px;
+  }
+  .dashboard-header p {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+
+  .overview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .overview-card:hover { border-color: var(--muted); }
+
+  .overview-card .card-subject {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .overview-card .card-pct {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+
+  .overview-card .card-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .overview-card .card-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s;
+  }
+
+  .overview-card .card-detail {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* SUBJECT PAGE */
+  .subject-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .subject-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    margin-bottom: 4px;
+  }
+
+  .subject-header .code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+
+  .progress-ring-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .big-pct {
+    font-family: 'Playfair Display', serif;
+    font-size: 40px;
+    font-weight: 700;
+  }
+
+  .big-pct .pct-label {
+    font-size: 14px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    display: block;
+  }
+
+  /* CHAPTER */
+  .chapter {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .chapter.completed {
+    border-color: #1a3a28;
+    background: #0f1a14;
+  }
+
+  .chapter-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    cursor: pointer;
+    gap: 12px;
+    transition: background 0.1s;
+  }
+
+  .chapter-header:hover { background: var(--surface2); }
+
+  .chapter-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 28px;
+  }
+
+  .chapter-title {
+    flex: 1;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .chapter-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .chapter-bar {
+    width: 80px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .chapter-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  .expand-icon {
+    color: var(--muted);
+    font-size: 16px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .chapter.open .expand-icon { transform: rotate(90deg); }
+
+  .chapter-body {
+    display: none;
+    padding: 4px 18px 16px 58px;
+    border-top: 1px solid var(--border);
+  }
+
+  .chapter.open .chapter-body { display: block; }
+
+  /* TASK GRID */
+  .task-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 12px;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .task-item:hover { border-color: var(--muted); }
+
+  .task-item.done {
+    background: var(--done-bg);
+    border-color: #1a4a2a;
+  }
+
+  .task-item .cb {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    background: transparent;
+  }
+
+  .task-item.done .cb {
+    background: var(--done);
+    border-color: var(--done);
+  }
+
+  .task-item.done .cb::after {
+    content: '✓';
+    font-size: 10px;
+    color: #0a1f10;
+    font-weight: 700;
+  }
+
+  .task-label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .task-item.done .task-label {
+    color: var(--done);
+    text-decoration: line-through;
+    text-decoration-color: #2a5a3a;
+  }
+
+  /* DRAWING SPECIAL */
+  .drawing-q-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawing-q-row:last-child { border-bottom: none; }
+
+  .q-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 80px;
+  }
+
+  .q-dots {
+    display: flex;
+    gap: 8px;
+  }
+
+  .q-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .q-dot:hover { border-color: var(--accent-draw); }
+
+  .q-dot.done {
+    background: var(--accent-draw);
+    border-color: var(--accent-draw);
+    color: #1a0a2a;
+    font-weight: 700;
+  }
+
+  /* PAGE visibility */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Reset button */
+  .reset-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .reset-btn:hover { border-color: #c0392b; color: #e74c3c; }
+
+  .hours-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+  }
+
+  /* DONUT CHART */
+  .donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 36px;
+    margin-bottom: 28px;
+  }
+
+  .donut-svg-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .donut-center-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .donut-center-pct {
+    font-family: 'Playfair Display', serif;
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    display: block;
+  }
+
+  .donut-center-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .donut-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .donut-legend-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-name {
+    font-size: 13px;
+    flex: 1;
+    color: var(--muted);
+  }
+
+  .legend-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 48px;
+    text-align: right;
+  }
+
+  .legend-mini-bar {
+    width: 80px; height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .legend-mini-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s;
+  }
+
+  /* DRAWING DAILY TRACKER */
+  .day-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-height: 80px;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+
+  .day-cell.today {
+    border-color: var(--accent-draw);
+    box-shadow: 0 0 0 1px rgba(201,176,247,0.15);
+  }
+
+  .day-cell.future {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .day-cell.empty {
+    background: transparent;
+    border-color: transparent;
+    pointer-events: none;
+  }
+
+  .day-cell.full-day {
+    background: #1a0f2a;
+    border-color: #4a2a7a;
+  }
+
+  .day-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1;
+  }
+
+  .day-cell.today .day-num {
+    color: var(--accent-draw);
+    font-weight: 600;
+  }
+
+  .day-dots {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .day-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.12s;
+    flex-shrink: 0;
+  }
+
+  .day-dot:hover {
+    border-color: var(--accent-draw);
+    background: rgba(201,176,247,0.15);
+  }
+
+  .day-dot.lit {
+    background: var(--accent-draw);
+    border-color: var(--accent-draw);
+  }
+
+  .draw-stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 110px;
+  }
+
+  .draw-stat-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent-draw);
+    line-height: 1;
+  }
+
+  .draw-stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1>Syllabus<br>Tracker</h1>
+    <span>Year I · Part I</span>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Navigation</div>
+    <div class="nav-item" id="nav-dashboard" onclick="showPage('dashboard')">
+      <div class="dot" style="background:#6b6d82"></div>
+      Dashboard
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Subjects</div>
+    <div class="nav-item" id="nav-physics" onclick="showPage('physics')">
+      <div class="dot" style="background:var(--accent-phy)"></div>
+      Physics
+    </div>
+    <div class="mini-bar"><div class="mini-bar-fill" id="sidebar-bar-physics" style="background:var(--accent-phy);width:0%"></div></div>
+
+    <div class="nav-item" id="nav-math" onclick="showPage('math')">
+      <div class="dot" style="background:var(--accent-math)"></div>
+      Mathematics
+    </div>
+    <div class="mini-bar"><div class="mini-bar-fill" id="sidebar-bar-math" style="background:var(--accent-math);width:0%"></div></div>
+
+    <div class="nav-item" id="nav-prog" onclick="showPage('prog')">
+      <div class="dot" style="background:var(--accent-prog)"></div>
+      Computer Prog.
+    </div>
+    <div class="mini-bar"><div class="mini-bar-fill" id="sidebar-bar-prog" style="background:var(--accent-prog);width:0%"></div></div>
+
+    <div class="nav-item" id="nav-elec" onclick="showPage('elec')">
+      <div class="dot" style="background:var(--accent-elec)"></div>
+      Elec. & Electronics
+    </div>
+    <div class="mini-bar"><div class="mini-bar-fill" id="sidebar-bar-elec" style="background:var(--accent-elec);width:0%"></div></div>
+
+    <div class="nav-item" id="nav-draw" onclick="showPage('draw')">
+      <div class="dot" style="background:var(--accent-draw)"></div>
+      Engineering Drawing
+    </div>
+    <div class="mini-bar"><div class="mini-bar-fill" id="sidebar-bar-draw" style="background:var(--accent-draw);width:0%"></div></div>
+  </div>
+
+  <div style="flex:1"></div>
+  <div style="padding:16px 20px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:10px">
+    <span id="sync-status" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--muted)">⚡ Offline (local)</span>
+    <button class="reset-btn" onclick="confirmReset()">RESET ALL</button>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div class="dashboard-header">
+      <h2>Overview</h2>
+      <p>Track your progress across all subjects</p>
+    </div>
+    <!-- DONUT RING CHART -->
+    <div class="donut-wrap">
+      <div class="donut-svg-wrap">
+        <svg id="donut-svg" width="180" height="180" viewBox="0 0 180 180">
+          <circle cx="90" cy="90" r="70" fill="none" stroke="var(--border)" stroke-width="22"/>
+          <!-- segments injected by JS -->
+          <g id="donut-segments"></g>
+        </svg>
+        <div class="donut-center-text">
+          <span class="donut-center-pct" id="donut-total-pct">0%</span>
+          <span class="donut-center-label">Total</span>
+        </div>
+      </div>
+
+      <div class="donut-legend">
+        <div class="donut-legend-title">Overall Progress</div>
+        <div class="legend-row" onclick="showPage('physics')">
+          <div class="legend-dot" style="background:var(--accent-phy)"></div>
+          <span class="legend-name">Physics</span>
+          <div class="legend-mini-bar"><div class="legend-mini-fill" id="leg-bar-physics" style="background:var(--accent-phy);width:0%"></div></div>
+          <span class="legend-stat" id="leg-stat-physics">0%</span>
+        </div>
+        <div class="legend-row" onclick="showPage('math')">
+          <div class="legend-dot" style="background:var(--accent-math)"></div>
+          <span class="legend-name">Mathematics</span>
+          <div class="legend-mini-bar"><div class="legend-mini-fill" id="leg-bar-math" style="background:var(--accent-math);width:0%"></div></div>
+          <span class="legend-stat" id="leg-stat-math">0%</span>
+        </div>
+        <div class="legend-row" onclick="showPage('prog')">
+          <div class="legend-dot" style="background:var(--accent-prog)"></div>
+          <span class="legend-name">Programming</span>
+          <div class="legend-mini-bar"><div class="legend-mini-fill" id="leg-bar-prog" style="background:var(--accent-prog);width:0%"></div></div>
+          <span class="legend-stat" id="leg-stat-prog">0%</span>
+        </div>
+        <div class="legend-row" onclick="showPage('elec')">
+          <div class="legend-dot" style="background:var(--accent-elec)"></div>
+          <span class="legend-name">Elec. &amp; Electronics</span>
+          <div class="legend-mini-bar"><div class="legend-mini-fill" id="leg-bar-elec" style="background:var(--accent-elec);width:0%"></div></div>
+          <span class="legend-stat" id="leg-stat-elec">0%</span>
+        </div>
+        <div class="legend-row" onclick="showPage('draw')">
+          <div class="legend-dot" style="background:var(--accent-draw)"></div>
+          <span class="legend-name">Engineering Drawing</span>
+          <div class="legend-mini-bar"><div class="legend-mini-fill" id="leg-bar-draw" style="background:var(--accent-draw);width:0%"></div></div>
+          <span class="legend-stat" id="leg-stat-draw">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-card" onclick="showPage('physics')">
+        <div class="card-subject" style="color:var(--accent-phy)">ENSH 102 · Physics</div>
+        <div class="card-pct" id="ov-pct-physics" style="color:var(--accent-phy)">0%</div>
+        <div class="card-bar"><div class="card-bar-fill" id="ov-bar-physics" style="background:var(--accent-phy);width:0%"></div></div>
+        <div class="card-detail" id="ov-detail-physics">0 / 0 tasks</div>
+      </div>
+      <div class="overview-card" onclick="showPage('math')">
+        <div class="card-subject" style="color:var(--accent-math)">ENSH 101 · Mathematics</div>
+        <div class="card-pct" id="ov-pct-math" style="color:var(--accent-math)">0%</div>
+        <div class="card-bar"><div class="card-bar-fill" id="ov-bar-math" style="background:var(--accent-math);width:0%"></div></div>
+        <div class="card-detail" id="ov-detail-math">0 / 0 tasks</div>
+      </div>
+      <div class="overview-card" onclick="showPage('prog')">
+        <div class="card-subject" style="color:var(--accent-prog)">ENCT 101 · Programming</div>
+        <div class="card-pct" id="ov-pct-prog" style="color:var(--accent-prog)">0%</div>
+        <div class="card-bar"><div class="card-bar-fill" id="ov-bar-prog" style="background:var(--accent-prog);width:0%"></div></div>
+        <div class="card-detail" id="ov-detail-prog">0 / 0 tasks</div>
+      </div>
+      <div class="overview-card" onclick="showPage('elec')">
+        <div class="card-subject" style="color:var(--accent-elec)">ENEX 101 · Elec. &amp; Electronics</div>
+        <div class="card-pct" id="ov-pct-elec" style="color:var(--accent-elec)">0%</div>
+        <div class="card-bar"><div class="card-bar-fill" id="ov-bar-elec" style="background:var(--accent-elec);width:0%"></div></div>
+        <div class="card-detail" id="ov-detail-elec">0 / 0 tasks</div>
+      </div>
+      <div class="overview-card" onclick="showPage('draw')">
+        <div class="card-subject" style="color:var(--accent-draw)">ENME 101 · Drawing</div>
+        <div class="card-pct" id="ov-pct-draw" style="color:var(--accent-draw)">0</div>
+        <div class="card-bar"><div class="card-bar-fill" id="ov-bar-draw" style="background:var(--accent-draw);width:0%"></div></div>
+        <div class="card-detail" id="ov-detail-draw">0 drawings done today</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHYSICS -->
+  <div id="page-physics" class="page">
+    <div class="subject-header">
+      <div>
+        <div class="code">ENSH 102</div>
+        <h2 style="color:var(--accent-phy)">Engineering Physics</h2>
+      </div>
+      <div class="progress-ring-wrap">
+        <div class="big-pct" style="color:var(--accent-phy)">
+          <span id="subj-pct-physics">0%</span>
+          <span class="pct-label">Complete</span>
+        </div>
+      </div>
+    </div>
+    <div id="chapters-physics"></div>
+  </div>
+
+  <!-- MATHEMATICS -->
+  <div id="page-math" class="page">
+    <div class="subject-header">
+      <div>
+        <div class="code">ENSH 101</div>
+        <h2 style="color:var(--accent-math)">Engineering Mathematics I</h2>
+      </div>
+      <div class="progress-ring-wrap">
+        <div class="big-pct" style="color:var(--accent-math)">
+          <span id="subj-pct-math">0%</span>
+          <span class="pct-label">Complete</span>
+        </div>
+      </div>
+    </div>
+    <div id="chapters-math"></div>
+  </div>
+
+  <!-- PROGRAMMING -->
+  <div id="page-prog" class="page">
+    <div class="subject-header">
+      <div>
+        <div class="code">ENCT 101</div>
+        <h2 style="color:var(--accent-prog)">Computer Programming</h2>
+      </div>
+      <div class="progress-ring-wrap">
+        <div class="big-pct" style="color:var(--accent-prog)">
+          <span id="subj-pct-prog">0%</span>
+          <span class="pct-label">Complete</span>
+        </div>
+      </div>
+    </div>
+    <div id="chapters-prog"></div>
+  </div>
+
+  <!-- ELECTRONICS -->
+  <div id="page-elec" class="page">
+    <div class="subject-header">
+      <div>
+        <div class="code">ENEX 101</div>
+        <h2 style="color:var(--accent-elec)">Electrical &amp; Electronics</h2>
+      </div>
+      <div class="progress-ring-wrap">
+        <div class="big-pct" style="color:var(--accent-elec)">
+          <span id="subj-pct-elec">0%</span>
+          <span class="pct-label">Complete</span>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Chapters 1–3: Theory + Numericals + Assignment + Model Sets &nbsp;|&nbsp; Chapters 4–6 (Electronics): Theory + Numericals only</p>
+    <div id="chapters-elec"></div>
+  </div>
+
+  <!-- DRAWING -->
+  <div id="page-draw" class="page">
+    <div class="subject-header">
+      <div>
+        <div class="code">ENME 101</div>
+        <h2 style="color:var(--accent-draw)">Engineering Drawing</h2>
+      </div>
+      <div class="progress-ring-wrap">
+        <div class="big-pct" style="color:var(--accent-draw)">
+          <span id="subj-pct-draw">0</span>
+          <span class="pct-label">drawings done</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div id="draw-stats-row" style="display:flex;gap:14px;margin-bottom:24px;flex-wrap:wrap"></div>
+
+    <!-- Month nav -->
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <button onclick="drawChangeMonth(-1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:16px">‹</button>
+      <span id="draw-month-label" style="font-family:'Playfair Display',serif;font-size:18px;min-width:160px;text-align:center"></span>
+      <button onclick="drawChangeMonth(1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:16px">›</button>
+    </div>
+
+    <!-- Day grid -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px">
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);padding:4px">SUN</div>
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);padding:4px">MON</div>
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);padding:4px">TUE</div>
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);padding:4px">WED</div>
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);padding:4px">THU</div>
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);padding:4px">FRI</div>
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);padding:4px">SAT</div>
+    </div>
+    <div id="draw-calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px"></div>
+  </div>
+
+</main>
+
+<script>
+  // ← PASTE YOUR DEPLOYED BACKEND URL HERE after deploying
+  // Example: window.SYLLABUS_API = 'https://syllabus-tracker-api.onrender.com';
+  window.SYLLABUS_API = 'https://syllabus-tracker-backend-q43k.onrender.com';
+</script>
+<script> ───────────────────────────────────────────────────────
+
+const PHYSICS_TASKS = ['Theory', 'Derivation', 'Numericals', 'Assignment/Tutorial', 'Gunadhi Lamsal', 'Model Set/PQ'];
+const MATH_TASKS    = ['Theory', 'Examples', 'Exercise'];
+const PROG_TASKS    = ['Theory', 'Programs', 'Model Sets'];
+const ELEC_TASKS_FULL = ['Theory', 'Numericals', 'Assignment', 'Model Sets'];
+const ELEC_TASKS_ELEC = ['Theory', 'Numericals'];
+
+const subjects = {
+  physics: {
+    accent: 'var(--accent-phy)',
+    chapters: [
+      { num:'1', title:'Oscillation', hours:6 },
+      { num:'2', title:'Acoustics', hours:3 },
+      { num:'3', title:'Heat and Thermodynamics', hours:8 },
+      { num:'4', title:'Optics', hours:17 },
+      { num:'5', title:'Electrostatics', hours:8 },
+      { num:'6', title:'Electromagnetism', hours:6 },
+      { num:'7', title:'Electromagnetic Waves', hours:6 },
+      { num:'8', title:'Photon and Matter Waves', hours:6 },
+    ],
+    tasks: PHYSICS_TASKS,
+    type: 'checkbox',
+  },
+  math: {
+    accent: 'var(--accent-math)',
+    chapters: [
+      { num:'1', title:'Derivatives and its Applications', hours:10 },
+      { num:'2', title:'Antiderivatives and its Applications', hours:11 },
+      { num:'3', title:'Ordinary Differential Equations', hours:10 },
+      { num:'4', title:'Plane Analytic Geometry', hours:4 },
+      { num:'5', title:'Three Dimensional Geometry', hours:10 },
+    ],
+    tasks: MATH_TASKS,
+    type: 'checkbox',
+  },
+  prog: {
+    accent: 'var(--accent-prog)',
+    chapters: [
+      { num:'1', title:'Introduction to Computer Programming', hours:3 },
+      { num:'2', title:'Overview of C Programming', hours:3 },
+      { num:'3', title:'Operators and Expressions', hours:4 },
+      { num:'4', title:'Input and Output', hours:3 },
+      { num:'5', title:'Control Structures', hours:8 },
+      { num:'6', title:'Array and Pointer', hours:7 },
+      { num:'7', title:'User-defined Functions', hours:6 },
+      { num:'8', title:'Structures', hours:5 },
+      { num:'9', title:'File Management', hours:4 },
+      { num:'10', title:'Recent Trends in Programming', hours:2 },
+    ],
+    tasks: PROG_TASKS,
+    type: 'checkbox',
+  },
+  elec: {
+    accent: 'var(--accent-elec)',
+    chapters: [
+      { num:'1', title:'Basic Circuit Concepts', hours:6, tasks: ELEC_TASKS_FULL },
+      { num:'2', title:'Average and RMS Values', hours:4, tasks: ELEC_TASKS_FULL },
+      { num:'3', title:'AC Circuit Analysis', hours:12, tasks: ELEC_TASKS_FULL },
+      { num:'4', title:'Diodes', hours:7, tasks: ELEC_TASKS_ELEC, note:'Electronics — Theory & Numericals only' },
+      { num:'5', title:'Transistor', hours:10, tasks: ELEC_TASKS_ELEC, note:'Electronics — Theory & Numericals only' },
+      { num:'6', title:'Operational Amplifier and Oscillator', hours:6, tasks: ELEC_TASKS_ELEC, note:'Electronics — Theory & Numericals only' },
+    ],
+    type: 'checkbox',
+  },
+  draw: {
+    accent: 'var(--accent-draw)',
+    type: 'daily',
+    // No chapters — daily tracker
+  },
+};
+
+// ─── CONFIG — set this to your deployed API URL after deploying the backend ──
+const API_BASE = window.SYLLABUS_API || '';   // e.g. 'https://your-api.onrender.com'
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+
+// Generate or load a stable device ID so each browser/device has its own row
+function getDeviceId() {
+  let id = localStorage.getItem('syllabus_device_id');
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('syllabus_device_id', id);
+  }
+  return id;
+}
+const DEVICE_ID = getDeviceId();
+
+// Sync status indicator helpers
+function setSyncStatus(status) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const map = { syncing:'⟳ Syncing…', saved:'✓ Saved', offline:'⚡ Offline (local)', error:'⚠ Sync error' };
+  const col = { syncing:'var(--muted)', saved:'var(--done)', offline:'var(--accent-prog)', error:'#e74c3c' };
+  el.textContent = map[status] || status;
+  el.style.color = col[status] || 'var(--muted)';
+}
+
+// Local cache — always write here immediately for instant UI updates
+function loadStateLocal() {
+  try { return JSON.parse(localStorage.getItem('syllabus_tracker') || '{}'); }
+  catch(e) { return {}; }
+}
+function saveStateLocal(s) {
+  localStorage.setItem('syllabus_tracker', JSON.stringify(s));
+}
+
+let state = loadStateLocal();
+let syncTimer = null;
+
+// Debounced remote save — waits 800ms after last change before hitting API
+function saveState(s) {
+  saveStateLocal(s);                  // instant local save
+  if (!API_BASE) { setSyncStatus('offline'); return; }
+  setSyncStatus('syncing');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => pushStateToDB(s), 800);
+}
+
+async function pushStateToDB(s) {
+  try {
+    const res = await fetch(`${API_BASE}/api/state`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId: DEVICE_ID, state: s })
+    });
+    if (!res.ok) throw new Error(res.statusText);
+    setSyncStatus('saved');
+    setTimeout(() => setSyncStatus(''), 2500);
+  } catch(e) {
+    console.warn('Sync failed, using local cache:', e);
+    setSyncStatus('error');
+  }
+}
+
+async function loadStateFromDB() {
+  if (!API_BASE) { setSyncStatus('offline'); return; }
+  setSyncStatus('syncing');
+  try {
+    const res = await fetch(`${API_BASE}/api/state?deviceId=${encodeURIComponent(DEVICE_ID)}`);
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
+    if (data.state && Object.keys(data.state).length > 0) {
+      state = data.state;
+      saveStateLocal(state);          // keep local cache in sync
+    }
+    setSyncStatus('saved');
+    setTimeout(() => setSyncStatus(''), 2000);
+  } catch(e) {
+    console.warn('Could not load from DB, falling back to local cache:', e);
+    setSyncStatus('offline');
+  }
+}
+
+function getKey(subj, chIdx, taskIdx) {
+  return `${subj}_${chIdx}_${taskIdx}`;
+}
+
+function isChecked(subj, chIdx, taskIdx) {
+  return !!state[getKey(subj, chIdx, taskIdx)];
+}
+
+function toggle(subj, chIdx, taskIdx) {
+  const k = getKey(subj, chIdx, taskIdx);
+  state[k] = !state[k];
+  saveState(state);
+  renderSubject(subj);
+  updateAllProgress();
+}
+
+// ─── DRAWING DAILY TRACKER ──────────────────────────────────────────────────
+
+let drawViewYear, drawViewMonth;
+
+function dateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function daysBetween(a, b) {
+  const ms = new Date(b) - new Date(a);
+  return Math.floor(ms / 86400000);
+}
+
+function getDrawStartDate() {
+  // First ever date a drawing was logged, or today
+  const keys = Object.keys(state).filter(k => k.startsWith('draw_day_') && state[k]);
+  if (keys.length === 0) return dateStr(new Date());
+  const dates = keys.map(k => k.split('draw_day_')[1].split('_')[0]).sort();
+  return dates[0];
+}
+
+function drawDayKey(ds, n) { return `draw_day_${ds}_${n}`; }
+
+function drawGetCount(ds) {
+  let c = 0;
+  for (let i = 0; i < 5; i++) if (state[drawDayKey(ds, i)]) c++;
+  return c;
+}
+
+function drawToggleDot(ds, n) {
+  const k = drawDayKey(ds, n);
+  state[k] = !state[k];
+  saveState(state);
+  renderDrawingPage();
+  updateAllProgress();
+}
+
+function drawChangeMonth(delta) {
+  drawViewMonth += delta;
+  if (drawViewMonth > 11) { drawViewMonth = 0; drawViewYear++; }
+  if (drawViewMonth < 0)  { drawViewMonth = 11; drawViewYear--; }
+  renderDrawingPage();
+}
+
+function renderDrawingPage() {
+  const today = new Date();
+  const todayStr = dateStr(today);
+
+  if (drawViewYear === undefined) {
+    drawViewYear = today.getFullYear();
+    drawViewMonth = today.getMonth();
+  }
+
+  // Stats
+  let totalDone = 0, streakCurrent = 0, fullDays = 0;
+  Object.keys(state).forEach(k => { if (k.startsWith('draw_day_') && state[k]) totalDone++; });
+
+  // Streak: count consecutive days ending today (backward)
+  let check = new Date(today);
+  while (true) {
+    const ds = dateStr(check);
+    const cnt = drawGetCount(ds);
+    if (cnt === 5) { streakCurrent++; fullDays++; check.setDate(check.getDate()-1); }
+    else if (cnt > 0 && ds === todayStr) { streakCurrent++; check.setDate(check.getDate()-1); }
+    else break;
+    if (streakCurrent > 365) break;
+  }
+
+  // Count all full days
+  fullDays = 0;
+  Object.keys(state).forEach(k => {
+    if (k.startsWith('draw_day_') && k.endsWith('_0')) {
+      const ds = k.replace('draw_day_','').replace('_0','');
+      if (drawGetCount(ds) === 5) fullDays++;
+    }
+  });
+
+  // Render stat cards
+  const statsRow = document.getElementById('draw-stats-row');
+  if (statsRow) {
+    statsRow.innerHTML = `
+      <div class="draw-stat-card">
+        <div class="draw-stat-val">${totalDone}</div>
+        <div class="draw-stat-label">Total Drawings</div>
+      </div>
+      <div class="draw-stat-card">
+        <div class="draw-stat-val">${streakCurrent}</div>
+        <div class="draw-stat-label">Day Streak</div>
+      </div>
+      <div class="draw-stat-card">
+        <div class="draw-stat-val">${fullDays}</div>
+        <div class="draw-stat-label">Full Days (×5)</div>
+      </div>
+      <div class="draw-stat-card">
+        <div class="draw-stat-val">${drawGetCount(todayStr)}/5</div>
+        <div class="draw-stat-label">Today</div>
+      </div>`;
+  }
+
+  // Month label
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const mlabel = document.getElementById('draw-month-label');
+  if (mlabel) mlabel.textContent = months[drawViewMonth] + ' ' + drawViewYear;
+
+  // Update subject header pct label
+  const sp = document.getElementById('subj-pct-draw');
+  if (sp) sp.textContent = totalDone;
+
+  // Calendar grid
+  const grid = document.getElementById('draw-calendar-grid');
+  if (!grid) return;
+
+  const firstDay = new Date(drawViewYear, drawViewMonth, 1).getDay();
+  const daysInMonth = new Date(drawViewYear, drawViewMonth+1, 0).getDate();
+
+  let html = '';
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) html += `<div class="day-cell empty"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = drawViewYear + '-' + String(drawViewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const isToday = ds === todayStr;
+    const isFuture = ds > todayStr;
+    const count = drawGetCount(ds);
+    const isFull = count === 5;
+
+    let cls = 'day-cell';
+    if (isToday) cls += ' today';
+    if (isFuture) cls += ' future';
+    if (isFull) cls += ' full-day';
+
+    let dots = '';
+    for (let n = 0; n < 5; n++) {
+      const lit = !!state[drawDayKey(ds, n)];
+      dots += `<div class="day-dot ${lit ? 'lit' : ''}" onclick="drawToggleDot('${ds}',${n})"></div>`;
+    }
+
+    html += `<div class="${cls}">
+      <span class="day-num">${d}</span>
+      <div class="day-dots">${dots}</div>
+      ${isFull ? '<span style="font-size:9px;color:var(--accent-draw);font-family:\'JetBrains Mono\',monospace">✦</span>' : ''}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+
+
+function renderSubject(subj) {
+  if (subj === 'draw') { renderDrawingPage(); return; }
+  const def = subjects[subj];
+  const container = document.getElementById(`chapters-${subj}`);
+  if (!container) return;
+
+  let html = '';
+  let totalDone = 0, totalAll = 0;
+
+  def.chapters.forEach((ch, ci) => {
+    const tasks = subj === 'elec' ? ch.tasks : (def.tasks || []);
+    const chTasks = tasks.length;
+
+    // count done
+    let chDone = 0;
+    const taskList = tasks;
+    taskList.forEach((t, ti) => {
+      if (isChecked(subj, ci, ti)) chDone++;
+    });
+
+    totalDone += chDone;
+    totalAll += chTasks;
+
+    const pct = chTasks > 0 ? Math.round(chDone / chTasks * 100) : 0;
+    const isOpen = container.querySelector(`[data-ch="${ci}"]`)?.classList.contains('open') || false;
+    const isComplete = chDone === chTasks && chTasks > 0;
+
+    html += `<div class="chapter ${isComplete ? 'completed' : ''} ${isOpen ? 'open' : ''}" data-ch="${ci}">
+      <div class="chapter-header" onclick="toggleChapter('${subj}',${ci})">
+        <span class="chapter-num">${ch.num.padStart(2,'0')}</span>
+        <span class="chapter-title">${ch.title}</span>
+        <span class="hours-badge">${ch.hours}h</span>
+        <div class="chapter-progress">
+          <div class="chapter-bar"><div class="chapter-bar-fill" style="background:${def.accent};width:${pct}%"></div></div>
+          <span>${chDone}/${chTasks}</span>
+        </div>
+        <span class="expand-icon">›</span>
+      </div>
+      <div class="chapter-body">`;
+
+    html += `<div class="task-grid">`;
+    taskList.forEach((t, ti) => {
+      const done = isChecked(subj, ci, ti);
+      html += `<div class="task-item ${done ? 'done' : ''}" onclick="toggle('${subj}',${ci},${ti})">
+        <div class="cb"></div>
+        <span class="task-label">${t}</span>
+      </div>`;
+    });
+    html += `</div>`;
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+
+  // restore open states
+  if (container._openStates) {
+    container.querySelectorAll('[data-ch]').forEach(el => {
+      if (container._openStates[el.dataset.ch]) el.classList.add('open');
+    });
+  }
+
+  const pct = totalAll > 0 ? Math.round(totalDone / totalAll * 100) : 0;
+  const el = document.getElementById(`subj-pct-${subj}`);
+  if (el) el.textContent = pct + '%';
+}
+
+function toggleChapter(subj, ci) {
+  const container = document.getElementById(`chapters-${subj}`);
+  const ch = container.querySelector(`[data-ch="${ci}"]`);
+  if (!ch) return;
+  if (!container._openStates) container._openStates = {};
+  const isOpen = ch.classList.toggle('open');
+  container._openStates[ci] = isOpen;
+}
+
+function getSubjectStats(subj) {
+  if (subj === 'draw') {
+    // Count total drawings done across all days
+    let done = 0;
+    Object.keys(state).forEach(k => {
+      if (k.startsWith('draw_day_') && state[k]) done++;
+    });
+    // Target: today's day-of-year * 5 (but at least 1 day so we don't divide by zero)
+    const startDate = getDrawStartDate();
+    const today = dateStr(new Date());
+    const daysSinceStart = Math.max(1, daysBetween(startDate, today) + 1);
+    const total = daysSinceStart * 5;
+    return { done, total };
+  }
+  const def = subjects[subj];
+  let done = 0, total = 0;
+  def.chapters.forEach((ch, ci) => {
+    const tasks = subj === 'elec' ? ch.tasks : def.tasks;
+    tasks.forEach((t, ti) => {
+      total++;
+      if (isChecked(subj, ci, ti)) done++;
+    });
+  });
+  return { done, total };
+}
+
+function renderDonut(subjList, stats, grandTotal, colors) {
+  const seg = document.getElementById('donut-segments');
+  if (!seg) return;
+
+  const cx = 90, cy = 90, r = 70;
+  const gap = 4; // degrees gap between segments
+  const totalDeg = 360 - (gap * subjList.length);
+
+  let currentAngle = -90;
+  let svgHTML = '';
+
+  subjList.forEach(subj => {
+    const { done, total } = stats[subj];
+    if (grandTotal === 0 || total === 0) { currentAngle += gap; return; }
+
+    const subjectDeg = (total / grandTotal) * totalDeg;
+    const doneFrac = done / total;
+    const doneDeg = subjectDeg * doneFrac;
+    const color = colors[subj];
+    const dimColor = hexToRgba(color, 0.13);
+
+    // Background arc (full subject slice, dim)
+    svgHTML += svgArc(cx, cy, r, currentAngle, currentAngle + subjectDeg, 22, dimColor);
+
+    // Done arc (filled portion)
+    if (doneDeg > 0.3) {
+      svgHTML += svgArc(cx, cy, r, currentAngle, currentAngle + doneDeg, 22, color);
+    }
+
+    currentAngle += subjectDeg + gap;
+  });
+
+  seg.innerHTML = svgHTML;
+}
+
+function svgArc(cx, cy, r, startDeg, endDeg, sw, color) {
+  const s = degToXY(cx, cy, r, startDeg);
+  const e = degToXY(cx, cy, r, endDeg);
+  const span = endDeg - startDeg;
+  const large = span > 180 ? 1 : 0;
+  if (span <= 0.1) return '';
+  return `<path d="M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}"
+    fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="butt"/>`;
+}
+
+function degToXY(cx, cy, r, deg) {
+  const rad = deg * Math.PI / 180;
+  return { x: +(cx + r * Math.cos(rad)).toFixed(3), y: +(cy + r * Math.sin(rad)).toFixed(3) };
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function updateAllProgress() {
+  const subjList = ['physics','math','prog','elec','draw'];
+  const colors = {
+    physics: '#7eb8f7', math: '#a8d8a8', prog: '#f7c67e',
+    elec: '#f79eb8', draw: '#c9b0f7'
+  };
+
+  let grandDone = 0, grandTotal = 0;
+  const stats = {};
+
+  subjList.forEach(subj => {
+    const { done, total } = getSubjectStats(subj);
+    stats[subj] = { done, total };
+    grandDone += done;
+    grandTotal += total;
+
+    const pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+    if (subj === 'draw') {
+      // Special display for drawing
+      const todayStr = dateStr(new Date());
+      let todayCount = 0;
+      for (let i = 0; i < 5; i++) if (state[drawDayKey(todayStr, i)]) todayCount++;
+
+      const ovPct = document.getElementById('ov-pct-draw');
+      const ovBar = document.getElementById('ov-bar-draw');
+      const ovDetail = document.getElementById('ov-detail-draw');
+      if (ovPct) ovPct.textContent = done;
+      if (ovBar) ovBar.style.width = Math.min(100, pct) + '%';
+      if (ovDetail) ovDetail.textContent = `${todayCount}/5 today · ${done} total`;
+
+      const sb = document.getElementById('sidebar-bar-draw');
+      if (sb) sb.style.width = Math.min(100, pct) + '%';
+
+      const lb = document.getElementById('leg-bar-draw');
+      const ls = document.getElementById('leg-stat-draw');
+      if (lb) lb.style.width = Math.min(100, pct) + '%';
+      if (ls) ls.textContent = done + ' drawn';
+      return;
+    }
+
+    // overview cards
+    const ovPct = document.getElementById(`ov-pct-${subj}`);
+    const ovBar = document.getElementById(`ov-bar-${subj}`);
+    const ovDetail = document.getElementById(`ov-detail-${subj}`);
+    if (ovPct) ovPct.textContent = pct + '%';
+    if (ovBar) ovBar.style.width = pct + '%';
+    if (ovDetail) ovDetail.textContent = `${done} / ${total} tasks`;
+
+    // sidebar bars
+    const sb = document.getElementById(`sidebar-bar-${subj}`);
+    if (sb) sb.style.width = pct + '%';
+
+    // subject page pct
+    const sp = document.getElementById(`subj-pct-${subj}`);
+    if (sp) sp.textContent = pct + '%';
+
+    // legend
+    const lb = document.getElementById(`leg-bar-${subj}`);
+    const ls = document.getElementById(`leg-stat-${subj}`);
+    if (lb) lb.style.width = pct + '%';
+    if (ls) ls.textContent = pct + '%';
+  });
+
+  // Total pct
+  const totalPct = grandTotal > 0 ? Math.round(grandDone / grandTotal * 100) : 0;
+  const el = document.getElementById('donut-total-pct');
+  if (el) el.textContent = totalPct + '%';
+
+  // Draw donut segments
+  renderDonut(subjList, stats, grandTotal, colors);
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.className = n.className.replace(/active(-\w+)?/g, '').trim();
+  });
+
+  document.getElementById(`page-${page}`).classList.add('active');
+
+  const navEl = document.getElementById(`nav-${page}`);
+  const colorMap = { physics:'phy', math:'math', prog:'prog', elec:'elec', draw:'draw', dashboard:'' };
+  if (navEl) {
+    navEl.classList.add('active');
+    if (colorMap[page]) navEl.classList.add(`active-${colorMap[page]}`);
+  }
+
+  // render subject if needed
+  if (page !== 'dashboard') {
+    renderSubject(page);
+  }
+}
+
+// ─── RESET ───────────────────────────────────────────────────────────────────
+
+function confirmReset() {
+  if (confirm('Reset ALL progress? This cannot be undone.')) {
+    state = {};
+    saveState(state);
+    ['physics','math','prog','elec','draw'].forEach(renderSubject);
+    updateAllProgress();
+    showPage('dashboard');
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
+async function init() {
+  // First paint from local cache (instant)
+  updateAllProgress();
+  showPage('dashboard');
+
+  // Then fetch latest from DB in background and re-render if different
+  await loadStateFromDB();
+  updateAllProgress();
+  // Re-render whichever page is currently visible
+  const activePage = document.querySelector('.page.active');
+  if (activePage && activePage.id !== 'page-dashboard') {
+    const subj = activePage.id.replace('page-', '');
+    renderSubject(subj);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

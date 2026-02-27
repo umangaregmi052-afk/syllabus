@@ -1031,11 +1031,42 @@ function saveStateLocal(s) {
 
 let state = loadStateLocal();
 let syncTimer = null;
+let serverAwake = false;
+let pendingSave = null;
+
+// ── Wake the server silently on page load ──────────────────────────────────
+async function wakeServer() {
+  if (!API_BASE) return;
+  try {
+    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(35000) });
+    if (res.ok) { serverAwake = true; }
+  } catch(e) { /* still sleeping, will retry on first save */ }
+}
+
+// ── Retry fetch with exponential backoff (3 attempts) ─────────────────────
+async function fetchWithRetry(url, options = {}, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(35000)   // 35s — enough for cold start
+      });
+      if (res.ok) return res;
+      throw new Error(`HTTP ${res.status}`);
+    } catch(e) {
+      if (i === retries - 1) throw e;
+      const wait = 2000 * Math.pow(2, i);    // 2s, 4s, 8s
+      setSyncStatus(`⟳ Retrying (${i+1}/3)…`);
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+}
 
 // Debounced remote save — waits 800ms after last change before hitting API
 function saveState(s) {
-  saveStateLocal(s);                  // instant local save
+  saveStateLocal(s);
   if (!API_BASE) { setSyncStatus('offline'); return; }
+  pendingSave = s;
   setSyncStatus('syncing');
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => pushStateToDB(s), 800);
@@ -1043,17 +1074,25 @@ function saveState(s) {
 
 async function pushStateToDB(s) {
   try {
-    const res = await fetch(`${API_BASE}/api/state`, {
+    await fetchWithRetry(`${API_BASE}/api/state`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId: DEVICE_ID, state: s })
     });
-    if (!res.ok) throw new Error(res.statusText);
+    serverAwake = true;
+    pendingSave = null;
     setSyncStatus('saved');
     setTimeout(() => setSyncStatus(''), 2500);
   } catch(e) {
-    console.warn('Sync failed, using local cache:', e);
+    console.warn('Sync failed, queued locally:', e);
     setSyncStatus('error');
+    // Retry after 10s in case server just needed more time to wake
+    setTimeout(() => {
+      if (pendingSave) {
+        setSyncStatus('syncing');
+        pushStateToDB(pendingSave);
+      }
+    }, 10000);
   }
 }
 
@@ -1061,17 +1100,17 @@ async function loadStateFromDB() {
   if (!API_BASE) { setSyncStatus('offline'); return; }
   setSyncStatus('syncing');
   try {
-    const res = await fetch(`${API_BASE}/api/state?deviceId=${encodeURIComponent(DEVICE_ID)}`);
-    if (!res.ok) throw new Error(res.statusText);
+    const res = await fetchWithRetry(`${API_BASE}/api/state?deviceId=${encodeURIComponent(DEVICE_ID)}`);
     const data = await res.json();
+    serverAwake = true;
     if (data.state && Object.keys(data.state).length > 0) {
       state = data.state;
-      saveStateLocal(state);          // keep local cache in sync
+      saveStateLocal(state);
     }
     setSyncStatus('saved');
     setTimeout(() => setSyncStatus(''), 2000);
   } catch(e) {
-    console.warn('Could not load from DB, falling back to local cache:', e);
+    console.warn('Could not load from DB, using local cache:', e);
     setSyncStatus('offline');
   }
 }
@@ -1515,10 +1554,12 @@ async function init() {
   updateAllProgress();
   showPage('dashboard');
 
+  // Ping server to wake it up while we render
+  wakeServer();
+
   // Then fetch latest from DB in background and re-render if different
   await loadStateFromDB();
   updateAllProgress();
-  // Re-render whichever page is currently visible
   const activePage = document.querySelector('.page.active');
   if (activePage && activePage.id !== 'page-dashboard') {
     const subj = activePage.id.replace('page-', '');

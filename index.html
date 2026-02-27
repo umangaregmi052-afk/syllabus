@@ -656,12 +656,182 @@
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── HAMBURGER BUTTON (mobile only) ─────────────────────────── */
+  .hamburger {
+    display: none;
+    position: fixed;
+    top: 14px; left: 14px;
+    z-index: 200;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 40px; height: 40px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+  }
+  .hamburger span {
+    display: block;
+    width: 18px; height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  /* sidebar overlay backdrop */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 149;
+  }
+
+  /* ── BOTTOM NAV (mobile only) ────────────────────────────────── */
+  .bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 200;
+    padding: 6px 0 env(safe-area-inset-bottom, 6px);
+  }
+
+  .bottom-nav-items {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .bn-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s;
+    flex: 1;
+  }
+
+  .bn-item:active { background: var(--surface2); }
+
+  .bn-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    transition: transform 0.15s;
+  }
+
+  .bn-item.active .bn-dot { transform: scale(1.4); }
+
+  .bn-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .bn-item.active .bn-label { color: var(--text); }
+
+  /* ── MOBILE MEDIA QUERY ──────────────────────────────────────── */
+  @media (max-width: 768px) {
+    body { display: block; }
+
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      z-index: 150;
+      width: 260px;
+    }
+
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-overlay.open { display: block; }
+
+    .hamburger { display: flex; }
+
+    .main {
+      margin-left: 0;
+      max-width: 100vw;
+      padding: 64px 16px 90px;   /* top: space for hamburger, bottom: space for bottom nav */
+    }
+
+    .bottom-nav { display: block; }
+
+    /* donut chart responsive */
+    .donut-wrap {
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px;
+      gap: 20px;
+    }
+
+    .donut-legend { width: 100%; }
+
+    /* overview grid: 2 columns on mobile */
+    .overview-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .overview-card .card-pct { font-size: 24px; }
+
+    /* subject header stack on mobile */
+    .subject-header {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* task grid: full width pills on mobile */
+    .task-grid { gap: 6px; }
+
+    .task-item {
+      width: 100%;
+      padding: 10px 14px;
+    }
+
+    /* chapter header tighter */
+    .chapter-header { padding: 12px 14px; gap: 8px; }
+    .chapter-body { padding: 4px 14px 14px 14px; }
+
+    .hours-badge { display: none; }
+
+    /* drawing day grid: smaller dots on mobile */
+    .day-dot { width: 12px; height: 12px; }
+    .day-cell { min-height: 70px; padding: 6px 4px; }
+
+    /* draw stat cards: 2 per row */
+    #draw-stats-row { display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .draw-stat-card { min-width: unset; }
+
+    /* big pct in subject header */
+    .big-pct { font-size: 28px; }
+  }
+
+  @media (max-width: 380px) {
+    .overview-grid { grid-template-columns: 1fr 1fr; }
+    .day-dot { width: 10px; height: 10px; }
+  }
 </style>
 </head>
 <body>
 
+<!-- HAMBURGER (mobile) -->
+<button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <!-- SIDEBAR -->
-<nav class="sidebar">
+<nav class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <h1>Syllabus<br>Tracker</h1>
     <span>Year I · Part I</span>
@@ -915,6 +1085,36 @@
   </div>
 
 </main>
+
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-items">
+    <div class="bn-item active" id="bn-dashboard" onclick="showPage('dashboard')">
+      <div class="bn-dot" style="background:#6b6d82"></div>
+      <span class="bn-label">Home</span>
+    </div>
+    <div class="bn-item" id="bn-physics" onclick="showPage('physics')">
+      <div class="bn-dot" style="background:var(--accent-phy)"></div>
+      <span class="bn-label">Physics</span>
+    </div>
+    <div class="bn-item" id="bn-math" onclick="showPage('math')">
+      <div class="bn-dot" style="background:var(--accent-math)"></div>
+      <span class="bn-label">Math</span>
+    </div>
+    <div class="bn-item" id="bn-prog" onclick="showPage('prog')">
+      <div class="bn-dot" style="background:var(--accent-prog)"></div>
+      <span class="bn-label">Prog.</span>
+    </div>
+    <div class="bn-item" id="bn-elec" onclick="showPage('elec')">
+      <div class="bn-dot" style="background:var(--accent-elec)"></div>
+      <span class="bn-label">Elec.</span>
+    </div>
+    <div class="bn-item" id="bn-draw" onclick="showPage('draw')">
+      <div class="bn-dot" style="background:var(--accent-draw)"></div>
+      <span class="bn-label">Draw</span>
+    </div>
+  </div>
+</nav>
 
 <script>
   // ← PASTE YOUR DEPLOYED BACKEND URL HERE after deploying
@@ -1512,6 +1712,20 @@ function updateAllProgress() {
   renderDonut(subjList, stats, grandTotal, colors);
 }
 
+// ─── MOBILE SIDEBAR ──────────────────────────────────────────────────────────
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('open');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
 
 function showPage(page) {
@@ -1519,6 +1733,7 @@ function showPage(page) {
   document.querySelectorAll('.nav-item').forEach(n => {
     n.className = n.className.replace(/active(-\w+)?/g, '').trim();
   });
+  document.querySelectorAll('.bn-item').forEach(n => n.classList.remove('active'));
 
   document.getElementById(`page-${page}`).classList.add('active');
 
@@ -1529,7 +1744,14 @@ function showPage(page) {
     if (colorMap[page]) navEl.classList.add(`active-${colorMap[page]}`);
   }
 
-  // render subject if needed
+  // Update bottom nav
+  const bnKey = page === 'dashboard' ? 'bn-dashboard' : `bn-${page}`;
+  const bnEl = document.getElementById(bnKey);
+  if (bnEl) bnEl.classList.add('active');
+
+  // Close sidebar on mobile after navigation
+  closeSidebar();
+
   if (page !== 'dashboard') {
     renderSubject(page);
   }
